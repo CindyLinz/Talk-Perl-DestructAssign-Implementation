@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="keywords" content="perl,destruct assign,xs,implement" />
+    <meta name="description" content="Slide for -- Perl mod: DestructAssign Implementation" />
+    <title>Perl mod: DestructAssign Implementation -- Hello, Perl internal!</title>
+    <style type="text/css">
+      @import url(http://fonts.googleapis.com/css?family=Droid+Serif);
+      @import url(http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+      @font-face {
+        font-family: 'tea';
+        src: url(simplified-SentyTEA-Platinum.ttf);
+      };
+
+      body {
+        font-family: 'Droid Serif';
+      }
+      h1, h2, h3, .large1, .large2, .large3 {
+        margin-bottom: 0;
+      }
+      h1, h2 {
+        font-family: 'tea';
+        font-weight: bold;
+      }
+      .smaller { font-size: smaller; }
+      .remark-slide-content h1 { font-size: 3em; }
+      .remark-slide-content h2 { font-size: 2em; }
+      .remark-slide-content h3 { font-size: 1.6em; }
+      .footnote {
+        position: absolute;
+        bottom: 3em;
+      }
+      .handwrite {
+        font-family: 'tea';
+        font-weight: bold;
+      }
+      .remark-slide-content .left { text-align: left; }
+      .remark-slide-content .large1 { font-size: 3em; }
+      .remark-slide-content .large2 { font-size: 2em; }
+      .remark-slide-content .large3 { font-size: 1.6em; }
+      li p { line-height: 1.25em; }
+      .red { color: #fa0000; }
+      .white { color: #fff; }
+      .black { color: #000; }
+      .darkgray { color: #272822; }
+      .bold { font-weight: bold; }
+      .normal { font-weight: normal; }
+      .large { font-size: 2em; }
+      a, a > code {
+        color: rgb(249, 38, 114);
+        text-decoration: none;
+      }
+      code {
+        -moz-border-radius: 5px;
+        -web-border-radius: 5px;
+        background: #e7e8e2;
+        border-radius: 5px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-code-line-highlighted     { background-color: #373832; }
+      .pull-left {
+        float: left;
+        width: 47%;
+      }
+      .pull-right {
+        float: right;
+        width: 47%;
+      }
+      .pull-right ~ p {
+        clear: both;
+      }
+      #slideshow .slide .content code {
+        font-size: 0.8em;
+      }
+      #slideshow .slide .content pre code {
+        font-size: 0.9em;
+        padding: 15px;
+      }
+      .inverse {
+        background: #272822;
+        /* background-image: url(Religious-Background-Slide.jpg); */
+        color: #777872;
+        /* color: #fff; */
+        text-shadow: 0 0 20px #333;
+      }
+      .inverse h1, .inverse h2 {
+        color: #f3f3f3;
+        line-height: 0.8em;
+      }
+      .inverse .handwrite {
+        /* color: #000; */
+      }
+
+      /* Slide-specific styling */
+      #slide-inverse .footnote {
+        bottom: 12px;
+        left: 20px;
+      }
+      #slide-how .slides {
+        font-size: 0.9em;
+        position: absolute;
+        top:  151px;
+        right: 140px;
+      }
+      #slide-how .slides h3 {
+        margin-top: 0.2em;
+      }
+      #slide-how .slides .first, #slide-how .slides .second {
+        padding: 1px 20px;
+        height: 90px;
+        width: 120px;
+        -moz-box-shadow: 0 0 10px #777;
+        -webkit-box-shadow: 0 0 10px #777;
+        box-shadow: 0 0 10px #777;
+      }
+      #slide-how .slides .first {
+        background: #fff;
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        z-index: 1;
+      }
+      #slide-how .slides .second {
+        position: relative;
+        background: #fff;
+        z-index: 0;
+      }
+
+      /* Two-column layout */
+      .left-column {
+        color: #777;
+        width: 20%;
+        height: 92%;
+        float: left;
+      }
+        .left-column h2:last-of-type, .left-column h3:last-child {
+          color: #000;
+        }
+      .right-column {
+        width: 75%;
+        float: right;
+        padding-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+name: inverse
+
+class: center, middle, inverse
+
+.left.large2.handwrite[Perl mod:]
+#DestructAssign Implementation
+.large.handwrite[Hello, Perl internal!]
+
+.large2.handwrite.normal[CindyLinz]
+
+2014.11.6
+<br>
+<br>
+
+----- Thanks to darkx (xatierLike Lee) for correcting English in this slide -----
+<!-- .footnote[image credit: [.darkgray[Mt. Carmel Baptist Church]](http://www.mtcarmelbc.com/)] -->
+
+---
+layout: true
+
+#Usage
+
+---
+
+example
+```perl
+des [$x, [undef, {          y =&gt; $y}, undef, $w], $z]
+  = [2,  [25   , {x =&gt; 'x', y =&gt; 3 }, 26   , 1 ], 4 ];
+```
+result
+```perl
+$x = 2; $y = 3; $w = 1; $z = 4;
+```
+
+---
+example
+```perl
+des [3 =&gt; $w, $x, -2 =&gt; $y, $z] = [1..9];
+```
+result
+```perl
+$w = 4; $x = 5; $y = 8; $z = 9;
+```
+
+---
+example
+```perl
+des {x =&gt; $x, x =&gt; [$y, $z]} = {x =&gt; [1, 2]};
+```
+result
+```perl
+$x = [1,2]; $y = 1; $z = 2;
+```
+
+---
+example
+```perl
+des [3 =&gt; @array, -4 =&gt; %hash] = [1..8];
+```
+result
+```perl
+@array = (4..8); %hash = (5 =&gt; 6, 7 =&gt; 8);
+```
+
+---
+example
+```perl
+$data = [1, 2, 3];
+des_alias [undef, $x] = $data;
+$x = 20;
+```
+result
+```perl
+$data = [1, 20, 3];
+```
+
+---
+
+* Pattern matching in functional languages
+
+  ```perl
+  $obj = bless { member1 =&gt; 1, member2 =&gt; 2 }, 'MyClass';
+
+  for( ref($obj) ) {
+      when('MyClass') {
+        des { member1 =&gt; my $member1, member2 =&gt; my $member2 } = $_;
+        ...
+      }
+      when('MyClass2') {
+        des { x =&gt; my $x, y =&gt; my $y } = $_;
+        ...
+      }
+  }
+  ```
+
+---
+layout: true
+
+#Normal Perl Behavior
+
+---
+
+```perl
+des [$x, [undef, {          y =&gt; $y}, undef, $w], $z]
+  = [2,  [25   , {x =&gt; 'x', y =&gt; 3 }, 26   , 1 ], 4 ];
+```
+
+--
+
+1. Invoke the lvalue subroutine `des` with its argument
+  ```perl
+[$x, [undef, {y =&gt; $y}, undef, $w], $z]
+  ```
+
+--
+2. Assign the structure
+  ```perl
+[2, [25, {x =&gt; 'x', y =&gt; 3}, 26, 1], 4]
+  ```
+  to the return value of `des`.
+
+---
+layout: true
+
+#Expected Behavior
+
+---
+
+```perl
+des [$x, [undef, {          y =&gt; $y}, undef, $w], $z]
+  = [2,  [25   , {x =&gt; 'x', y =&gt; 3 }, 26   , 1 ], 4 ];
+```
+
+--
+
+1. Create a pattern with the shape of
+  ```perl
+[$x, [undef, {y =&gt; $y}, undef, $w], $z]
+  ```
+
+--
+2. Assign the corresponding values from
+  ```perl
+[2, [25, {x =&gt; 'x', y =&gt; 3}, 26, 1], 4]
+  ```
+  to each variable, respectively.
+
+---
+layout: true
+
+#Perl OP Tree
+
+---
+```perl
+des [undef, {y =&gt; $y, w =&gt; $w}, $x]
+```
+
+<img src=optree2.svg width=50% style=float:left>
+
+--
+
+* Put `undef` on the stack (and mark the position before it).
+
+--
+
+* Put `"y"`, `$y`, `"w"`, `$w` on the stack (and mark the position before `"y"`).
+
+--
+
+* Collect them (from the mark before `"y"`) and create an anonymous hash. Then, put the hash reference on the stack.
+
+--
+
+* Put `$x` on the stack.
+
+--
+
+* Collect them (from the mark before `undef`) and create an anonymous array. Then, put the array reference on the stack.
+
+---
+```perl
+des [undef, {y =&gt; $y, w =&gt; $w}, $x]
+```
+
+<img src=optree2.svg width=50% style=float:left>
+
+* Put `undef` on the stack (and mark the position before it).
+
+* Put `"y"`, `$y`, `"w"`, `$w` on the stack (and mark the position before `"y"`).
+
+* Collect them (from the mark before `"y"`) and create an .red[hash pattern]. Then, put the .red[hash pattern] on the stack.
+
+* Put `$x` on the stack.
+
+* Collect them (from the mark before `undef`) and create an .red[array pattern]. Then, put the .red[array pattern] on the stack.
+
+---
+```perl
+des [...] = [...]
+```
+
+<img src=optree_assign.svg width=40% style=float:left>
+
+* Do something..
+
+--
+
+* Put the right-hand-side on the stack.
+
+--
+
+* Invoke `des` and put the return value on the stack. (`des` is an lvalue `sub`, that is, always returns exactly one value.)
+
+--
+
+* Assign the value (on the stack) into the returned value.
+
+---
+```perl
+des [...] = [...]
+```
+
+<img src=optree_assign.svg width=40% style=float:left>
+
+* Do something..
+
+* Put the right-hand-side on the stack.
+
+* .red[Create and put the pattern] on the stack.
+
+* .red[Capture the components from the right-hand-side into the corresponding placeholders of the pattern in the left-hand-side.]
+
+---
+layout: true
+
+##Perl Runtime Main Loop &amp; OP Struct
+
+---
+
+```c
+struct op {
+    BASEOP
+};
+struct unop {
+    BASEOP
+    OP *	op_first;
+};
+struct binop {
+    BASEOP
+    OP *	op_first;
+    OP *	op_last;
+};
+struct listop {
+    BASEOP
+    OP *	op_first;
+    OP *	op_last;
+};
+...
+#define OP op
+#define UNOP unop
+...
+```
+
+---
+
+```html
+#define BASEOP                          \
+    OP*         op_next;                \
+    OP*         op_sibling;             \
+    OP*         (*op_ppaddr)(pTHX);     \
+    MADPROP_IN_BASEOP                   \
+    PADOFFSET   op_targ;                \
+    PERL_BITFIELD16 op_type:9;          \
+    PERL_BITFIELD16 op_opt:1;           \
+    PERL_BITFIELD16 op_slabbed:1;       \
+    PERL_BITFIELD16 op_savefree:1;      \
+    PERL_BITFIELD16 op_static:1;        \
+    PERL_BITFIELD16 op_spare:3;         \
+    U8          op_flags;               \
+    U8          op_private;
+```
+
+```
+while ((PL_op = op = op-&gt;op_ppaddr(aTHX))) {
+    OP_ENTRY_PROBE(OP_NAME(op));
+}
+```
+--
+
+We need a chance to modify `op_ppaddr`.
+
+---
+layout: true
+
+#Perl Execution Phases
+
+---
+
+A.pl
+```perl
+use Foo;
+use Bar;
+use Baz;
+...
+```
+
+Foo.pm
+```perl
+...
+```
+
+Bar.pm
+```perl
+...
+```
+
+Baz.pm
+```perl
+...
+```
+
+---
+
+<img src=phases.png width=50% style=float:left>
+
+.footnote[image credit: http://www.effectiveperlprogramming.com/2011/03/know-the-phases-of-a-perl-programs-execution/ by brian d foy]
+
+--
+
+* In the `CHECK` phase, perl will invoke checkers for each OP code.
+  The checkers are allowed to read and modify the OP tree.
+
+---
+layout: true
+
+#Perl OP Check Hook
+
+---
+
+* The checker type:
+  ```c
+  typedef OP* (*Perl_check_t) (pTHX_ OP*);
+  ```
+
+--
+
+* They are all located in a global array:
+  ```c
+  Perl_check_t PL_check[] = {...};
+  ```
+  This array is indexed by the OP code (`op_type`).
+  ```c
+  struct op {
+      ...
+      PERL_BITFIELD16 op_type:9;
+      ...
+  };
+  ```
+
+---
+
+opcode.h
+```c
+...
+EXT Perl_check_t PL_check[] /* or perlvars.h */
+= {
+        Perl_ck_null,           /* null */
+        Perl_ck_null,           /* stub */
+        Perl_ck_fun,            /* scalar */
+        Perl_ck_null,           /* pushmark */
+        Perl_ck_null,           /* wantarray */
+        Perl_ck_svconst,        /* const */
+        Perl_ck_null,           /* gvsv */
+        Perl_ck_null,           /* gv */
+...
+```
+
+---
+
+* We modified the `PL_check` and replaced the hook chain manually in the past (Perl &lt;= 5.12)
+
+--
+
+* Now we can also use a helper function on a designated `sub` (since Perl 5.14, current Perl = 5.20)
+  ```c
+  typedef OP *(*Perl_call_checker)(pTHX_ OP *, GV *, SV *);
+
+  void Perl_cv_set_call_checker
+      (pTHX_ CV *cv, Perl_call_checker ckfun, SV *ckobj);
+  ```
+
+  This is a common use case to introduce new semantics to Perl without conflicts.
+
+---
+
+* There's another global array which stores all builtin OP handlers.
+  We can use them in our OP handlers. (Not used in this mod)
+
+  opcode.h
+  ```c
+  ...
+  EXT Perl_ppaddr_t PL_ppaddr[] /* or perlvars.h */
+  = {
+          Perl_pp_null,
+          Perl_pp_stub,
+          Perl_pp_scalar, /* implemented by Perl_pp_null */
+          Perl_pp_pushmark,
+          Perl_pp_wantarray,
+          Perl_pp_const,
+          Perl_pp_gvsv,
+          Perl_pp_gv,
+          Perl_pp_gelem,
+          Perl_pp_padsv,
+  ...
+  ```
+
+---
+layout: true
+
+#Assign My OP handler
+
+---
+
+<img src=optree_ppaddr.svg width=50% style=float:left>
+
+* I use the customized checker to find each OP tree which intends to call `DestructAssign::des` or `DestructAssign::des_alias`.
+
+---
+
+<img src=optree_ppaddr2.svg width=50% style=float:left>
+
+* I use the customized checker to find each OP tree which intends to call `DestructAssign::des` or `DestructAssign::des_alias`.
+
+* I traverse around the OP tree structure of argument and assign my OP handlers to each `anonhash` and `anonlist`.
+
+---
+
+<img src=optree_ppaddr3.svg width=50% style=float:left>
+
+* I use the customized checker to find each OP tree which intends to call `DestructAssign::des` or `DestructAssign::des_alias`.
+
+* I traverse around the OP tree structure of argument and assign my OP handlers to each `anonhash` and `anonlist`.
+
+* I also assign another OP handler of mine to `entersub` to prevent it from invoking `sub` at run-time.
+
+---
+layout: true
+
+##Analyse The Static Pattern Info
+
+---
+
+<img src=static_info.svg width=40% style=float:right>
+
+* In addition to assigning my OP handlers,
+  now I extract some static information so that I wont't need to traverse the OP tree of argument every time at run-time.
+
+--
+
+* For each `anonhash` and `anonlist` in the OP tree of argument,
+  I recognize whether each element is a constant (as an index indicator), a variable (as a placeholder), or an anonhash/anonlist (as a sub-pattern).
+
+--
+
+<img src=runtime_info.svg width=40% style=float:left;clear:both>
+
+* At run-time, after the OP nodes of the elements are executed, the results of them are put on the stack, the variables and values become indistinguishable.
+  They are all pointers of type SV (scalar value) in C.
+
+  I need the information from the OP tree to determine whether each of them is a value of a constant (as an index/key),
+  a `ref` of an anonymous hash/array (as a sub-pattern),
+  or a value from a variable (as a placeholder)
+
+---
+
+* Now I need a place to store the extracted static information. There's no space in the OP node.
+
+--
+
+* I create another OP node right after the OP node of `anonhash` or `anonlist`.
+
+--
+
+* The type `SVOP` is a `BASEOP` plus an `SV` (scalar value) slot.
+  ```c
+  struct svop {
+      BASEOP
+      SV * op_sv;
+  };
+  #define SVOP svop
+  ```
+
+--
+
+<img src=svop.svg width=50%>
+
+---
+
+<img src=svop.svg width=38% style=float:right>
+
+* By setting the OP code to `OP_NULL`, it will do nothing at run-time.
+
+  By setting the `TARG` to `OP_CONST`,
+  it will free the resource of the attached `SV` while the containing OP tree is freed.
+  ```c
+  OP * info_op = newSVOP(OP_NULL, 0, info_sv);
+  info_op-&gt;op_targ = OP_CONST;
+
+  info_op-&gt;op_sibling = anonhash_op-&gt;op_sibling;
+  anonhash_op-&gt;op_sibling = info_op;
+  ```
+
+--
+
+* After optimizing at the end of the `CHECK` phase, the `op_next`
+  of the OP node of `anonhash` or `anonlist` will just skip over the `OP_NULL` node, but still linked on `op_sibling`.
+
+--
+
+* It costs no execution cycle on `OP_NULL` node, and
+  I can still access its `SV` at runtime.
+
+---
+layout: true
+
+##My OP Handler
+
+---
+
+<img src=svop_anonlist_on.svg width=45% style=float:right>
+<img src=runtime_info.svg width=45% style=float:right;clear:both>
+
+* When my OP handlers of `anonhash` or `anonlist` start running, the children OP nodes are executed, and their results are on the stack.
+
+--
+
+* The normal behavior is creating a new hash / array, taking the children out off the stack, and copying them into the new hash / array.
+
+--
+
+* I shouldn't copy these children, or I will only get the previous values from the placeholders, not themselves.
+
+--
+
+* I shouldn't create a Perl hash / array to hold child nodes, otherwise the duplicated hash keys will be collapsed.
+
+--
+
+* I create a C array for them.
+
+---
+
+<img src=after_op_handler.svg width=80%>
+
+--
+
+* The last step, I should still put a trigger `SV` back to the stack.
+
+--
+
+* The responsibility of this trigger is driving all the placeholders in the sub-pattern to get the corresponding values when
+  someone is assigning the value to the whole sub-pattern.
+  It should also hold the C array and be responsible to free the allocated memory via garbage collection.
+
+---
+layout: true
+
+#Perl Magic
+
+---
+
+<img src=magic.svg width=40% style=float:right>
+
+* **Magic** is a keyword in Perl internal.
+
+--
+
+* This is the mechanism to give `SV`s special meanings or different side-effects.
+
+--
+
+* We can put `get`, `set`, `destroy` and many other hooks to `SV`s.
+
+--
+
+* We can also attach additional data fields to `SV`s (borrowed or owned).
+
+---
+
+<img src=magic.svg width=40% style=float:right>
+
+* I put a magic `SV` on the stack to track the `set` action and attach the C array.
+
+--
+
+* When the `set` trigger is invoked, I look up the attached C array and extract designated components from the recieved value to targets
+  -- placeholders or sub-hash / sub-array patterns.
+
+  The `set` trigger of the sub-hash / sub-array will do the same thing recursively.
+
+--
+
+* The puzzle of `des` case is completed.
+
+---
+layout: true
+
+#For Alias
+
+---
+
+* For the `des_alias` case, I put `set` and `get` triggers on the placeholders and take references to their monitored targets.
+
+--
+
+<img src=alias.svg width=25%>
+
+--
+
+* The `set` triggers will propagate the recieved values to the monitored targets.
+
+  The `get` triggers will fetch values from the monitored targets.
+
+---
+layout: true
+
+#Future Work
+
+---
+
+* Preprocess the index constants into C format. Currently they are all in Perl format.
+
+--
+
+* We can add more patterns, at least `refgen` and `srefgen`
+  ```perl
+  des { a =&gt; \@some_array } = { a =&gt; [1, 2, 3] };
+  # $some_array[1] = 2
+  ```
+
+  Currently, we can only do
+  ```perl
+  des { a =&gt; $some_array } = { a =&gt; [1, 2, 3] };
+  # $some_array-&gt;[1] = 2
+  ```
+
+---
+
+* Another pattern for hash
+  ```perl
+  des {$a, $b, {$x, $y}, c =&gt; $c} =
+      {a =&gt; 1, b =&gt; {x =&gt; 'a', y =&gt; 'b'}, c =&gt; 'c'};
+  # result $a = 1, $b = {x =&gt; 'a', y =&gt; 'b'}, $c = 'c', $x = 'a', $y = 'b'
+  ```
+
+  + Take keys from the names of the variables when there're no constants before them
+
+  + Use the previous keys for patterns that don't provide constants before them.
+
+  Currently we need:
+  ```perl
+  des {a =&gt; $a, b =&gt; $b, b =&gt; {x =&gt; $x, y =&gt; $y}, c =&gt; $c} =
+      {a =&gt; 1, b =&gt; {x =&gt; 'a', y =&gt; 'b'}, c =&gt; 'c'};
+  ```
+
+---
+layout: true
+
+#Reference
+
+---
+
+* man [perlxs](http://perldoc.perl.org/perlxs.html)
+
+* man [perlapi](http://perldoc.perl.org/perlapi.html)
+
+* man [perlguts](http://perldoc.perl.org/perlguts.html)
+
+* man [h2xs](http://perldoc.perl.org/h2xs.html)
+
+--
+
+* If your English is as limited as mine, you might need to read the [perl source code](https://github.com/Perl/perl5) directly.
+
+  I'm usually confused by the words in _perlapi_. The source code seems much more friendly to me.
+
+  Perl is implemented in C, not C++.
+
+---
+layout: true
+class: center
+
+# The Perl's way: TIMTOWTDI
+
+---
+
+## There is
+## more then one way
+## to do it
+
+---
+
+## There's no best way
+## We keep trying new ways.. .red[&#10084;]
+
+    </textarea>
+    <script src="remark-0.6.5.min.js" type="text/javascript"></script>
+    <script src="remark.language.js" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+          highlightStyle: 'monokai',
+          highlightLanguage: 'remark'
+        }) ;
+      var pages = document.querySelectorAll('.remark-slide-container');
+      var i, j;
+      var onces;
+      var used;
+      for(i=0; i<pages.length; ++i){
+        used = {};
+        onces = pages[i].querySelectorAll('.once')
+        for(j=onces.length-1; j>=0; --j){
+          if( used[onces[j].getAttribute('data-once')] )
+            onces[j].parentNode.removeChild(onces[j]);
+          else
+            used[onces[j].getAttribute('data-once')] = true;
+        }
+      }
+    </script>
+  </body>
+</html>
