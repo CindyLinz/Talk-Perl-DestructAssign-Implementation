@@ -1,0 +1,37 @@
+digraph static_info {
+    node [shape=plaintext];
+
+    t1 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td>pushmark</td>
+            <td port="anonlist">anonlist</td>
+            <td port="rv2cv">rv2cv</td>
+        </tr></table>
+    >];
+
+    t1:anonlist -> t2:pushmark;
+    t1:rv2cv -> t3:gv;
+
+    t2 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td rowspan="2" port="pushmark">pushmark</td>
+            <td rowspan="2">undef</td>
+            <td rowspan="2">anonhash</td>
+            <td>padsv</td>
+        </tr><tr>
+            <td>"$x"</td>
+        </tr><tr>
+            <td border="0"></td>
+            <td bgcolor="#cccccc">constant</td>
+            <td bgcolor="#cccccc">pattern</td>
+            <td bgcolor="#cccccc">variable</td>
+        </tr></table>
+    >];
+
+    t3 [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="gv">gv</td></tr>
+            <tr><td>"des"</td></tr>
+        </table>
+    >];
+}

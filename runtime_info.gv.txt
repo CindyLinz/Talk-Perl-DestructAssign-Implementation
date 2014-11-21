@@ -1,0 +1,53 @@
+digraph runtime_info {
+    node [shape=plaintext];
+
+    mark [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td border="0">markstack</td>
+            <td bgcolor="#ffcccc">...</td>
+            <td bgcolor="#ffcccc" port="mark">mark</td>
+        </tr></table>
+    >];
+
+    mark:mark -> stack:pre [style="dashed" arrowhead="onormal"];
+
+    stack [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td border="0">stack</td>
+            <td bgcolor="#ffcccc" port="pre">...</td>
+            <td bgcolor="#ffcccc" port="undef">SV*</td>
+            <td bgcolor="#ffcccc" port="anonhash">SV*</td>
+            <td bgcolor="#ffcccc" port="padsv">SV*</td>
+        </tr></table>
+    >];
+
+    stack:undef -> undef_sv:body [style="dashed" arrowhead="onormal"];
+    stack:anonhash -> anonhash_sv:body [style="dashed" arrowhead="onormal"];
+    stack:padsv -> padsv_sv:body [style="dashed" arrowhead="onormal"];
+
+    undef_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="body">SV(undef)</td>
+        </tr></table>
+    >];
+
+    anonhash_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="body">SV(ref)</td></tr>
+            <tr><td port="rv">SvRV:SV*</td></tr>
+        </table>
+    >];
+    anonhash_sv:rv -> hash_sv:body;
+    hash_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="body">HV(hash)</td></tr>
+            <tr><td>...</td></tr>
+        </table>
+    >];
+
+    padsv_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="body">SV(?)</td>
+        </tr></table>
+    >];
+}

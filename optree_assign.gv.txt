@@ -1,0 +1,17 @@
+digraph optree {
+    node [shape=record];
+
+    t0 [label="<sassign> sassign"];
+    t0:sassign -> t1:anonlist;
+    t1 [label="<anonlist> anonlist | <entersub> entersub"];
+    t1:anonlist -> t2;
+    t1:entersub -> t3:list;
+    t2 [label="..."];
+    t3 [label="<list> list"];
+    t3:list -> t4:pushmark;
+    t4 [label="<pushmark> pushmark | <anonlist> anonlist | <rv2cv> rv2cv"];
+    t4:rv2cv -> t5;
+    t5 [label="{<gv> gv | &quot;des&quot;}"];
+    t4:anonlist -> t6;
+    t6 [label="..."];
+}

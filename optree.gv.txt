@@ -1,0 +1,43 @@
+digraph optree {
+    node [shape=record];
+    entersub;
+    entersub -> pushmark1;
+    {
+        rank = same;
+        pushmark1 [label=pushmark];
+        anonlist;
+        rv2cv;
+
+        pushmark1 -> anonlist;
+        anonlist -> rv2cv;
+        rv2cv -> gv;
+    }
+    anonlist -> pushmark2;
+    {
+        rank = same;
+        pushmark2 [label=pushmark];
+        undef;
+        anonhash;
+        padsv_x [label="{padsv | $x}"];
+        gv [label="{gv | \"des\"}"];
+
+        pushmark2 -> undef;
+        undef -> anonhash;
+        anonhash -> padsv_x;
+    }
+    anonhash -> pushmark3;
+    {
+        rank = same;
+
+        pushmark3 [label=pushmark];
+        const_y [label="{const | \"y\"}"];
+        const_w [label="{const | \"w\"}"];
+        padsv_y [label="{padsv | $y}"];
+        padsv_w [label="{padsv | $w}"];
+
+        pushmark3 -> const_y;
+        const_y -> padsv_y;
+        padsv_y -> const_w;
+        const_w -> padsv_w;
+    }
+}

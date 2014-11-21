@@ -1,0 +1,27 @@
+digraph alias {
+    node [shape=plaintext];
+
+    stack [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td border="0">stack</td>
+            <td bgcolor="#ffcccc">...</td>
+            <td bgcolor="#ffcccc" port="SV">SV*</td>
+        </tr></table>
+    >];
+
+    stack:SV -> shadow:SV [style="dashed" arrowhead="onormal"];
+
+    shadow [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="SV">SV(magic)</td>
+        </tr></table>
+    >];
+
+    shadow:SV -> real:SV;
+
+    real [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="SV">SV(?)</td>
+        </tr></table>
+    >];
+}

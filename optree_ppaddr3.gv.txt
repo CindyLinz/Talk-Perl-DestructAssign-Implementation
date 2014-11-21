@@ -1,0 +1,57 @@
+
+digraph optree {
+    node [shape=plaintext];
+
+    t0 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="entersub" bgcolor="#ffff00">entersub</td>
+        </tr></table>
+    >];
+    t0:entersub -> t1:list;
+    t1 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="list">list</td>
+        </tr></table>
+    >];
+    t1:list -> t2:pushmark
+    t2 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="pushmark">pushmark</td>
+            <td port="anonlist" bgcolor="#00ff00">anonlist</td>
+            <td port="rv2cv">rv2cv</td>
+        </tr></table>
+    >];
+    t2:anonlist -> t3:pushmark;
+    t3 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td rowspan="2" port="pushmark">pushmark</td>
+            <td rowspan="2">undef</td>
+            <td rowspan="2" port="anonhash" bgcolor="#00ff00">anonhash</td>
+            <td>padsv</td>
+        </tr><tr>
+            <td>"$x"</td>
+        </tr></table>
+    >];
+    t2:rv2cv -> t4;
+    t4 [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="gv">gv</td></tr>
+            <tr><td>"des"</td></tr>
+        </table>
+    >];
+    t3:anonhash -> t5:pushmark;
+    t5 [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td rowspan="2" port="pushmark">pushmark</td>
+            <td>const</td>
+            <td>padsv</td>
+            <td>const</td>
+            <td>padsv</td>
+        </tr><tr>
+            <td>"y"</td>
+            <td>"$y"</td>
+            <td>"w"</td>
+            <td>"$w"</td>
+        </tr></table>
+    >];
+}

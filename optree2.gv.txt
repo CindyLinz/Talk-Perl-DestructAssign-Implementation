@@ -1,0 +1,15 @@
+digraph optree {
+    node [shape=record];
+
+    t0 [label="<entersub> entersub"];
+    t0:entersub -> t1:list;
+    t1 [label="<list> list"];
+    t1:list -> t2:pushmark
+    t2 [label="<pushmark> pushmark | <anonlist> anonlist | <rv2cv> rv2cv"];
+    t2:anonlist -> t3:pushmark;
+    t3 [label="<pushmark> pushmark | undef | <anonhash> anonhash | {padsv | &quot;$x&quot;}"];
+    t2:rv2cv -> t4;
+    t4 [label="{<gv> gv | &quot;des&quot;}"];
+    t3:anonhash -> t5:pushmark;
+    t5 [label="<pushmark> pushmark | {const | &quot;y&quot;} | {padsv | &quot;$y&quot;} | {const | &quot;w&quot;} | {padsv | &quot;$w&quot;}"];
+}

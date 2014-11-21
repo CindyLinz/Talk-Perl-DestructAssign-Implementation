@@ -1,0 +1,54 @@
+digraph magic {
+    node [shape=plaintext];
+
+    SV [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td>SV(magic)</td></tr>
+            <tr><td>
+                <table border="0" cellborder="1" cellspacing="0">
+                    <tr><td>...</td></tr>
+                    <tr><td port="MAGIC">MAGIC*</td></tr>
+                    <tr><td>...</td></tr>
+                </table>
+            </td></tr>
+        </table>
+    >];
+
+    SV:MAGIC -> MAGIC:0;
+
+    MAGIC [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="0">MAGIC</td>
+            <td port="1">MAGIC</td>
+            <td port="2">MAGIC</td>
+            <td port="3">...</td>
+        </tr><tr>
+            <td>
+                <table border="0" cellborder="1" cellspacing="0">
+                    <tr><td port="MGVTBL">MGVTBL*</td></tr>
+                    <tr><td>SV* (any data)</td></tr>
+                    <tr><td>char* (any data)</td></tr>
+                </table>
+            </td>
+            <td>...</td>
+            <td>...</td>
+            <td>...</td>
+        </tr></table>
+    >];
+
+    MAGIC:MGVTBL -> MGVTBL;
+
+    MGVTBL [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="MGVTBL">MGVTBL</td></tr>
+            <tr><td>
+                <table border="0" cellborder="1" cellspacing="0">
+                    <tr><td port="0">(*get)(SV*,MAGIC*)</td></tr>
+                    <tr><td>(*set)(SV*,MAGIC*)</td></tr>
+                    <tr><td>(*free)(SV*,MAGIC*)</td></tr>
+                    <tr><td>...</td></tr>
+                </table>
+            </td></tr>
+        </table>
+    >];
+}

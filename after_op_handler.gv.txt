@@ -1,0 +1,71 @@
+digraph svop {
+    node [shape=plaintext];
+
+    stack [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td border="0">stack</td>
+            <td bgcolor="#ffcccc">...</td>
+            <td bgcolor="#ffcccc" port="SV">SV*</td>
+        </tr></table>
+    >];
+
+    stack:SV -> sv:SV [style="dashed" arrowhead="onormal"];
+
+    sv [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="SV">SV(magic)</td>
+        </tr></table>
+    >];
+
+    sv:SV -> carray:1;
+
+    carray [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td border="0">C array</td>
+            <td bgcolor="#cccccc" port="0">I32**</td>
+            <td bgcolor="#cccccc" port="1">SV*</td>
+            <td bgcolor="#cccccc" port="2">SV*</td>
+            <td bgcolor="#cccccc" port="3">SV*</td>
+        </tr></table>
+    >];
+
+    carray:0 -> pattern:0 [style="dashed" arrowhead="onormal"];
+    carray:1 -> undef_sv:body [style="dashed" arrowhead="onormal"];
+    carray:2 -> anonhash_sv:body [style="dashed" arrowhead="onormal"];
+    carray:3 -> padsv_sv:body [style="dashed" arrowhead="onormal"];
+
+    pattern [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td rowspan="2">anonlist</td>
+            <td>null</td>
+            <td rowspan="2">rv2cv</td>
+        </tr><tr>
+            <td>
+                <table border="0" cellborder="1" cellspacing="0" bgcolor="#cccccc"><tr>
+                    <td port="0">constant</td>
+                    <td>pattern</td>
+                    <td>variable</td>
+                </tr></table>
+            </td>
+        </tr></table>
+    >];
+
+    undef_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="body">SV(undef)</td>
+        </tr></table>
+    >];
+
+    anonhash_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0">
+            <tr><td port="body">SV(ref)</td></tr>
+            <tr><td port="rv">SvRV:SV*</td></tr>
+        </table>
+    >];
+
+    padsv_sv [label=<
+        <table border="0" cellborder="1" cellspacing="0"><tr>
+            <td port="body">SV(?)</td>
+        </tr></table>
+    >];
+}
